@@ -55,7 +55,7 @@ git_mirror ~/work/flinkwork/docker
 cd ${SNAPSHOTS}
 for repo in $(find ${MOUNTPATH} -maxdepth 1 -type d -name "*.git");
 do
-    echo $repo
+    echo $repo " " $PWD
 done
 
 cd ${MOUNTPATH}/snapshots
