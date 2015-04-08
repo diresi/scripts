@@ -1,0 +1,7 @@
+
+*.swp
+*.tar.gz
+build
+.~lock*
+__pycache__
+.ropeproject
