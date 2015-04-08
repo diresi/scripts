@@ -50,16 +50,6 @@ git_mirror ~/opt/bin no_add auto_commit
 git_mirror ~/work/flinkwork/office auto_add auto_commit
 git_mirror ~/work/flinkwork/docker
 
-# checkout snapshots
-[[ ! -d ${SNAPSHOTS} ]] && mkdir ${SNAPSHOTS}
-cd ${SNAPSHOTS}
-for repo in $(find ${MOUNTPATH} -maxdepth 1 -type d -name "*.git");
-do
-    echo $repo " " $PWD
-done
-
-cd ${MOUNTPATH}/snapshots
-
 if [[ ${MOUNTED} -eq 1 ]]; then
     echo "Unmounting $MOUNTPATH"
     umount ${MOUNTPATH}
