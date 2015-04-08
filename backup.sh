@@ -31,6 +31,13 @@ function auto_commit
     fi
 }
 
+function git_fsck
+{
+    REPO=$1
+    cd ${REPO}
+    git fsck --full --strict
+}
+
 function git_mirror
 {
     REPO=$1
@@ -44,6 +51,7 @@ function git_mirror
 
     echo "mirroring ${PWD} -> ${MIRROR}"
     git push --mirror ${MIRROR}
+    git_fsck ${MIRROR}
 }
 
 git_mirror ~/opt/bin no_add auto_commit
