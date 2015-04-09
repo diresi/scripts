@@ -5,6 +5,7 @@ set -e
 LABEL=FLINKBACKUP
 MOUNTPATH=/media/${LABEL}
 SNAPSHOTS=${MOUNTPATH}/snapshots
+CURDIR=${PWD}
 
 MOUNTED=0
 if [[ ! $(mount | grep ${LABEL}) ]]; then
@@ -57,6 +58,7 @@ function git_mirror
 git_mirror ~/opt/bin no_add auto_commit
 git_mirror ~/work/flinkwork/office auto_add auto_commit
 git_mirror ~/work/flinkwork/docker
+cd ${CURDIR}
 
 if [[ ${MOUNTED} -eq 1 ]]; then
     echo "Unmounting $MOUNTPATH"
