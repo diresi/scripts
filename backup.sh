@@ -1,18 +1,20 @@
 #!/bin/bash
 set -e
-#set -x
+set -x
 
 LABEL=FLINKBACKUP
-MOUNTPATH=/media/${LABEL}
-SNAPSHOTS=${MOUNTPATH}/snapshots
+DEVICE=/dev/disk/by-label/${LABEL}
 CURDIR=${PWD}
 
 MOUNTED=0
 if [[ ! $(mount | grep ${LABEL}) ]]; then
     echo "Mounting $MOUNTPATH"
-    mount ${MOUNTPATH}
+    udisksctl mount -b ${DEVICE}
     MOUNTED=1
 fi
+
+MOUNTPATH=$(udisksctl info -b ${DEVICE} | grep MountPoints | sed -e "s/ *MountPoints: *\(.*\)$/\1/")
+SNAPSHOTS=${MOUNTPATH}/snapshots
 
 function auto_add
 {
@@ -62,6 +64,6 @@ cd ${CURDIR}
 
 if [[ ${MOUNTED} -eq 1 ]]; then
     echo "Unmounting $MOUNTPATH"
-    umount ${MOUNTPATH}
+    udisksctl unmount -b ${DEVICE}
 fi
 
