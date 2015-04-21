@@ -41,7 +41,7 @@ function git_fsck
     git fsck --full --strict
 }
 
-function git_mirror
+function git_push_all
 {
     REPO=$1
     AUTOADD=$2
@@ -53,13 +53,14 @@ function git_mirror
     auto_commit ${AUTOCOMMIT}
 
     echo "mirroring ${PWD} -> ${MIRROR}"
-    git push --mirror ${MIRROR}
+    git push --all ${MIRROR}
+    git push --tags ${MIRROR}
     git_fsck ${MIRROR}
 }
 
-git_mirror ~/opt/bin no_add auto_commit
-git_mirror ~/work/flinkwork/office auto_add auto_commit
-git_mirror ~/work/flinkwork/docker
+git_push_all ~/opt/bin no_add auto_commit
+git_push_all ~/work/flinkwork/office auto_add auto_commit
+git_push_all ~/work/flinkwork/docker
 cd ${CURDIR}
 
 if [[ ${MOUNTED} -eq 1 ]]; then
