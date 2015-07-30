@@ -6,7 +6,8 @@ import json
 import requests
 import argparse
 from urllib.parse import quote_plus
-from termstyle import inverted, red, green, blue
+from termstyle import inverted, red, green, blue, auto as termstyle_auto
+termstyle_auto()
 
 CONFIG_FILE="~/.gitlab.yml"
 CONFIG = yaml.load(open(os.path.expanduser(CONFIG_FILE)))
@@ -101,4 +102,14 @@ if __name__ == "__main__":
                 set_labels(detail, args.issues, args.labels)
                 args.labels = []
 
-    print_issues(args.issues, args.labels)
+            print_issues(args.issues, args.labels)
+
+        elif args.action == "new":
+            issues = [issue["iid"] for issue in get_issues() if not issue["labels"]]
+            if issues:
+                labels = args.labels or ["new"]
+                set_labels("+", issues, labels)
+                print_issues(issues, labels)
+
+    else:
+        print_issues(args.issues, args.labels)
