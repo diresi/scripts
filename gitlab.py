@@ -10,6 +10,26 @@ base_url = "http://gitlab.flinkwork.com/api/v3"
 s = requests.Session()
 s.headers["PRIVATE-TOKEN"] = api_token
 
+try:
+    import termstyle
+except ImportError:
+    class termstyle(object):
+        @staticmethod
+        def default(s):
+            return s
+        green = default
+        red = default
+        yellow = default
+        magenta = default
+
+def status_color(s):
+    _colors = {
+        "success":termstyle.green,
+        "failed" :termstyle.red,
+        "skipped":termstyle.yellow
+    }
+    return _colors.get(s.strip(), termstyle.default)(s)
+
 def maybe_load_dt(x):
     if not hasattr(x, "lower"):
         return x
@@ -69,16 +89,18 @@ for project in sorted(projects.values(), key=lambda p: p["last_activity_at"], re
                 pass
         try:
             assignee = mr["assignee"]["name"]
+            assignee_color = termstyle.magenta
         except (TypeError, KeyError):
             assignee = "nobody :-("
+            assignee_color = termstyle.red
         print("{:>10}".format(mr["id"]),
-              "{:>10}".format(build_status),
+              status_color("{:>10}".format(build_status)),
               "{:>20}".format(human(mr["created_at"], 1)),
-              "{:>20}".format(assignee),
+              assignee_color("{:>20}".format(assignee)),
               mr["title"])
     for p in pipelines:
         print("{:>10}".format(p["id"]),
-              "{:>10}".format(p["status"]),
+              status_color("{:>10}".format(p["status"])),
               "{:>20}".format(human(p["created_at"], 1)),
               "{:>20}".format(""),
               p["ref"])
