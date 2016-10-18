@@ -54,7 +54,7 @@ for project in sorted(projects.values(), key=lambda p: p["last_activity_at"], re
     for mr in mrs:
         try:
             assignee = mr["assignee"]["name"]
-        except KeyError:
+        except (TypeError, KeyError):
             assignee = "nobody :-("
         print("{:>10}".format(mr["id"]), "{:>10}".format(""), "{:>20}".format(human(mr["created_at"], 1)), "{:>10}".format(assignee), "  ", mr["title"])
     for p in pipelines:
