@@ -26,7 +26,8 @@ def status_color(s):
     _colors = {
         "success":termstyle.green,
         "failed" :termstyle.red,
-        "skipped":termstyle.yellow
+        "skipped":termstyle.yellow,
+        "running":termstyle.magenta,
     }
     return _colors.get(s.strip(), termstyle.default)(s)
 
