@@ -43,12 +43,13 @@ def load_dt(d):
     d = {k:maybe_load_dt(v) for k, v in d.items()}
     return d
 
-def get(path, reverse=False, **kw):
+def get(path, limit=None, **kw):
     page = None
     data = []
     while True:
         params = kw.copy()
         params["page"] = page
+        params["per_page"] = limit
         r = s.get(base_url + path, params=params)
         if not r.ok:
             break
@@ -56,25 +57,27 @@ def get(path, reverse=False, **kw):
         if not isinstance(rdata, list):
             return load_dt(rdata)
         data.extend(rdata)
+        if limit is not None and len(data) >= limit:
+            break
         page = r.headers.get("X-Next-Page", None)
         if not page:
             break
 
-    data.sort(key=lambda x:x["id"], reverse=reverse)
     return [load_dt(d) for d in data]
 
-projects = {_project["path_with_namespace"]:_project for _project in get("/projects/")}
-
 _pipelines = {}
-def project_pipelines(project_id):
+def project_pipelines(project_id, limit=3):
     if project_id not in _pipelines:
-        _pipelines[project_id] = get("/projects/{}/pipelines".format(project_id), reverse=True)
+        _pipelines[project_id] = get("/projects/{}/pipelines".format(project_id), limit=limit)
     return _pipelines[project_id]
 
-now = datetime.datetime.now()
-for project in sorted(projects.values(), key=lambda p: p["last_activity_at"], reverse=True):
-    mrs = get("/projects/{}/merge_requests".format(project["id"]), reverse=True, state="opened")
-    pipelines = [p for p in project_pipelines(project["id"]) if (now - p["created_at"] < datetime.timedelta(days=5))][:3]
+dt_limit = datetime.datetime.now() - datetime.timedelta(days=7)
+projects = get("/projects/")
+for project in sorted(projects, key=lambda p: p["last_activity_at"], reverse=True):
+    if project["last_activity_at"] < dt_limit:
+        continue
+    mrs = get("/projects/{}/merge_requests".format(project["id"]), state="opened")
+    pipelines = project_pipelines(project["id"])
     if not (pipelines or mrs):
         continue
 
