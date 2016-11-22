@@ -3,6 +3,7 @@ import argparse
 import os
 import sys
 import datetime
+import re
 import requests
 import dateutil.parser
 from ago import human
@@ -36,6 +37,9 @@ def status_color(s):
 
 def maybe_load_dt(x):
     if not hasattr(x, "lower"):
+        return x
+    if not re.match("....-..-..T", x):
+        # only parse iso8601 strings, not version numbers ;)
         return x
     try:
         return dateutil.parser.parse(x).replace(tzinfo=None)
