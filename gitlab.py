@@ -1,4 +1,7 @@
 #!/home/resi/opt/virtualenvs/scripts/bin/python
+import argparse
+import os
+import sys
 import datetime
 import requests
 import dateutil.parser
@@ -63,45 +66,64 @@ def get(path, reverse=False, **kw):
     data.sort(key=lambda x:x["id"], reverse=reverse)
     return [load_dt(d) for d in data]
 
-projects = {_project["path_with_namespace"]:_project for _project in get("/projects/")}
-
 _pipelines = {}
 def project_pipelines(project_id):
     if project_id not in _pipelines:
         _pipelines[project_id] = get("/projects/{}/pipelines".format(project_id), reverse=True)
     return _pipelines[project_id]
 
-now = datetime.datetime.now()
-for project in sorted(projects.values(), key=lambda p: p["last_activity_at"], reverse=True):
-    mrs = get("/projects/{}/merge_requests".format(project["id"]), reverse=True, state="opened")
-    pipelines = [p for p in project_pipelines(project["id"]) if (now - p["created_at"] < datetime.timedelta(days=5))][:3]
-    if not (pipelines or mrs):
-        continue
+def main(args):
+    dt_delta = datetime.timedelta(days=args.days)
+    max_pipelines = args.pipelines
 
-    print(project["path_with_namespace"], project["web_url"])
-    for mr in mrs:
-        build_status = ""
-        pipeline_by_sha = {p["sha"]:p for p in project_pipelines(mr["source_project_id"])}
-        for commit in get("/projects/{}/merge_requests/{}/commits".format(project["id"], mr["id"])):
+    projects = get("/projects/")
+    if args.project:
+        projects = [p for p in projects if args.project in p["path_with_namespace"]]
+
+    now = datetime.datetime.now()
+
+    for project in sorted(projects, key=lambda p: p["last_activity_at"], reverse=True):
+        mrs = get("/projects/{}/merge_requests".format(project["id"]), reverse=True, state="opened")
+        pipelines = [p for p in project_pipelines(project["id"]) if (now - p["created_at"] < dt_delta)][:max_pipelines]
+        if not (pipelines or mrs):
+            continue
+
+        print(project["path_with_namespace"], project["web_url"])
+        for mr in mrs:
+            build_status = ""
+            pipeline_by_sha = {p["sha"]:p for p in project_pipelines(mr["source_project_id"])}
+            for commit in get("/projects/{}/merge_requests/{}/commits".format(project["id"], mr["id"])):
+                try:
+                    build_status = pipeline_by_sha[commit["id"]]["status"]
+                    break
+                except KeyError:
+                    pass
             try:
-                build_status = pipeline_by_sha[commit["id"]]["status"]
-                break
-            except KeyError:
-                pass
-        try:
-            assignee = mr["assignee"]["name"]
-            assignee_color = termstyle.magenta
-        except (TypeError, KeyError):
-            assignee = "nobody :-("
-            assignee_color = termstyle.red
-        print("{:>10}".format(mr["id"]),
-              status_color("{:>10}".format(build_status)),
-              "{:>20}".format(human(mr["created_at"], 1)),
-              assignee_color("{:>20}".format(assignee)),
-              mr["title"])
-    for p in pipelines:
-        print("{:>10}".format(p["id"]),
-              status_color("{:>10}".format(p["status"])),
-              "{:>20}".format(human(p["created_at"], 1)),
-              "{:>20}".format(""),
-              p["ref"])
+                assignee = mr["assignee"]["name"]
+                assignee_color = termstyle.magenta
+            except (TypeError, KeyError):
+                assignee = "nobody :-("
+                assignee_color = termstyle.red
+            print("{:>10}".format(mr["id"]),
+                status_color("{:>10}".format(build_status)),
+                "{:>20}".format(human(mr["created_at"], 1)),
+                assignee_color("{:>20}".format(assignee)),
+                mr["title"])
+        for p in pipelines:
+            print("{:>10}".format(p["id"]),
+                status_color("{:>10}".format(p["status"])),
+                "{:>20}".format(human(p["created_at"], 1)),
+                "{:>20}".format(""),
+                p["ref"])
+
+if __name__ == "__main__":
+    progname = os.path.basename(sys.argv[0])
+    parser = argparse.ArgumentParser(prog=progname,
+                                     description="gitlab status reporter",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("-d", "--days", type=int, default=5, help="number of days to look back")
+    parser.add_argument("-p", "--pipelines", type=int, default=3, help="number of pipelines to show")
+    parser.add_argument("project", nargs="?", help="project name filter (substring of namespace/path)")
+    args = parser.parse_args()
+    main(args)
